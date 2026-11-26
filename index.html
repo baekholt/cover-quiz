@@ -5,52 +5,62 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cover quiz</title>
 <style>
+  /*
+    Written for old browser engines too: only basic positioning here. The script at the
+    bottom sets the image size in pixels and makes 1rem equal 2% of the screen height.
+  */
   * { box-sizing: border-box; margin: 0; }
-  html, body { height: 100%; overflow: hidden; background: #000; color: #fff;
-    font-family: "Avenir Next", "Helvetica Neue", system-ui, sans-serif;
-    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  html, body { height: 100%; overflow: hidden; background: #000; color: #fff; }
+  body { font-family: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    touch-action: manipulation; -webkit-user-select: none; user-select: none;
     -webkit-tap-highlight-color: transparent; }
   body.idle { cursor: none; }
 
-  /* Blurred copy of the current image fills the screen behind it. */
-  #backdrop { position: fixed; inset: -10vmax; background: center / cover no-repeat;
-    filter: blur(5vmax) brightness(.35) saturate(1.3); }
+  /* Blurred copy of the current image behind it, only where the browser can blur. */
+  #backdrop { display: none; position: fixed; top: -10%; right: -10%; bottom: -10%; left: -10%;
+    background: #000 center no-repeat; background-size: cover; }
+  @supports ((filter: blur(1px)) or (-webkit-filter: blur(1px))) {
+    #backdrop { display: block; -webkit-filter: blur(2.5rem) brightness(.35) saturate(1.3);
+      filter: blur(2.5rem) brightness(.35) saturate(1.3); }
+  }
 
-  section { position: fixed; inset: 0; display: none; flex-direction: column;
-    align-items: center; gap: 2.5vh; padding: 4vh 4vw; }
-  section.on { display: flex; }
-  section img { flex: 1 1 0; min-height: 0; width: 100%; object-fit: contain;
-    filter: drop-shadow(0 1.5vh 4vh rgba(0, 0, 0, .7)); }
+  section { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    overflow: hidden; }
+  section.on { display: block; }
+  section img { position: absolute; visibility: hidden;
+    box-shadow: 0 .7rem 2rem rgba(0, 0, 0, .7); }
 
-  /* Optional text under the image. <b> is the big line. */
-  section p { flex: none; text-align: center; text-wrap: balance;
-    font-size: 3.4vh; line-height: 1.25; color: rgba(255, 255, 255, .8); }
-  section p b { display: block; font-size: 6vh; font-weight: 600; line-height: 1.1;
-    color: #fff; margin-bottom: .6vh; }
-  section p small { display: block; font-size: 2.4vh; margin-top: 1vh;
-    color: rgba(255, 255, 255, .55); }
-  body.notext section:not(.title):not(.test) p { display: none; }
+  /* Optional text under the image. <b> is the big line, <small> the smallest. */
+  section p { position: absolute; left: 4%; right: 4%; bottom: 4%; text-align: center;
+    font-size: 1.7rem; line-height: 1.25; color: #ccc; color: rgba(255, 255, 255, .8); }
+  section p b { display: block; font-size: 3rem; font-weight: 600; line-height: 1.1;
+    color: #fff; margin-bottom: .3rem; }
+  section p small { display: block; font-size: 1.2rem; margin-top: .5rem;
+    color: #999; color: rgba(255, 255, 255, .55); }
+  body.notext section p { display: none; }
+  body.notext section.title p, body.notext section.test p { display: block; }
 
   /* Test slides: nothing to reveal, arrows mark the two tap zones. */
-  section.test { justify-content: center; }
-  section.test::before, section.test::after { position: absolute; top: 50%; translate: 0 -50%;
-    font-size: 30vh; line-height: 1; color: rgba(255, 255, 255, .15); }
-  section.test::before { content: "‹"; left: 6vw; }
-  section.test::after { content: "›"; right: 6vw; }
+  section.test p { top: 38%; bottom: auto; left: 16%; right: 16%; }
+  section.test p small { margin-top: 2rem; font-size: .8rem; color: #666; }
+  section.test:before, section.test:after { position: absolute; top: 0; bottom: 0;
+    margin: auto 0; height: 15rem; line-height: 15rem; font-size: 15rem;
+    color: #333; color: rgba(255, 255, 255, .15); }
+  section.test:before { content: "\2039"; left: 6%; }
+  section.test:after { content: "\203A"; right: 6%; }
 
   /* Title slide: full-screen photo with the title over it. */
-  section.title { padding: 0; }
-  section.title img { position: absolute; inset: 0; height: 100%; object-fit: cover;
-    object-position: center 35%; filter: none; }
-  section.title p { position: absolute; left: 0; right: 0; bottom: 0; padding: 30vh 4vw 7vh;
-    font-size: 4.5vh; text-shadow: 0 .3vh 2vh rgba(0, 0, 0, .9);
-    background: linear-gradient(transparent, rgba(0, 0, 0, .9)); }
-  section.title p b { font-size: 13vh; }
-  section.title cite { position: absolute; left: 2vw; bottom: 2vh; font-size: 1.6vh;
-    font-style: normal; color: rgba(255, 255, 255, .45); }
+  section.title img { box-shadow: none; }
+  section.title p { left: 0; right: 0; bottom: 0; padding: 15rem 4% 3.5rem; font-size: 2.25rem;
+    color: #fff; text-shadow: 0 .15rem 1rem rgba(0, 0, 0, .9);
+    background: -webkit-linear-gradient(top, rgba(0, 0, 0, 0), rgba(0, 0, 0, .9));
+    background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, .9)); }
+  section.title p b { font-size: 6.5rem; }
+  section.title cite { position: absolute; left: 2%; bottom: 2%; font-size: .8rem;
+    font-style: normal; color: #888; color: rgba(255, 255, 255, .45); }
 
-  #counter { position: fixed; right: 2vw; bottom: 2vh; font-size: 2vh;
-    font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, .4); }
+  #counter { position: fixed; right: 2%; bottom: 2%; font-size: 1rem;
+    color: #777; color: rgba(255, 255, 255, .4); }
 </style>
 </head>
 <body>
@@ -69,17 +79,17 @@
 
 <!-- Test 1 -->
 <section class="test">
-  <p><b>Test 1 / 3</b> Tap the right half for next, the left half for back</p>
+  <p><b>Don't touch</b> Test 1 / 3 <small class="info"></small></p>
 </section>
 
 <!-- Test 2 -->
 <section class="test">
-  <p><b>Test 2 / 3</b> Tap the right half for next, the left half for back</p>
+  <p><b>Don't touch</b> Test 2 / 3</p>
 </section>
 
 <!-- Test 3 -->
 <section class="test">
-  <p><b>Test 3 / 3</b> Tap the right half for next, the left half for back</p>
+  <p><b>Don't touch</b> Test 3 / 3</p>
 </section>
 
 <!-- Title -->
@@ -290,52 +300,115 @@
 <div id="counter"></div>
 
 <script>
-  const slides = [...document.querySelectorAll('section')];
-  const backdrop = document.getElementById('backdrop');
-  const counter = document.getElementById('counter');
-  let current = 0;
+// Plain old JavaScript on purpose, so it also runs in the browser of an older display.
+(function () {
+  var root = document.documentElement;
+  var slides = Array.prototype.slice.call(document.getElementsByTagName('section'));
+  var backdrop = document.getElementById('backdrop');
+  var counter = document.getElementById('counter');
+  var info = document.querySelector('.info');
+  var current = 0;
+
+  function has(el, cls) { return (' ' + el.className + ' ').indexOf(' ' + cls + ' ') >= 0; }
+  function first(el, tag) { return el.getElementsByTagName(tag)[0] || null; }
+
   // Test and title slides come first and are not counted, so slide N is still track N.
-  const offset = slides.findIndex(s => !s.matches('.test, .title'));
+  var offset = 0;
+  while (offset < slides.length && (has(slides[offset], 'test') || has(slides[offset], 'title'))) offset++;
+
+  // Size and place the current image in pixels: as large as fits above the text,
+  // or filling the whole screen on the title slide.
+  function layout() {
+    var W = window.innerWidth || root.clientWidth;
+    var H = window.innerHeight || root.clientHeight;
+    root.style.fontSize = (H / 50) + 'px';
+    if (info) info.innerHTML = W + ' x ' + H + ' @' + (window.devicePixelRatio || 1) + ' &middot; ' + navigator.userAgent;
+
+    var slide = slides[current], img = first(slide, 'img'), text = first(slide, 'p');
+    if (!img) return;
+    var nw = img.naturalWidth, nh = img.naturalHeight;
+    if (!nw || !nh) return;  // not loaded yet; the load handler calls layout again
+    var scale, left, top;
+    if (has(slide, 'title')) {
+      scale = Math.max(W / nw, H / nh);
+      left = (W - nw * scale) / 2;
+      top = (H - nh * scale) * 0.35;
+    } else {
+      var padX = W * 0.04, padY = H * 0.04;
+      var textH = text ? text.offsetHeight : 0;
+      var availH = H - 2 * padY - (textH ? textH + H * 0.025 : 0);
+      scale = Math.min((W - 2 * padX) / nw, availH / nh);
+      left = (W - nw * scale) / 2;
+      top = padY + (availH - nh * scale) / 2;
+    }
+    img.style.width = Math.round(nw * scale) + 'px';
+    img.style.height = Math.round(nh * scale) + 'px';
+    img.style.left = Math.round(left) + 'px';
+    img.style.top = Math.round(top) + 'px';
+    img.style.visibility = 'visible';
+  }
 
   function show(n) {
     current = Math.max(0, Math.min(slides.length - 1, n));
-    slides.forEach((s, k) => s.classList.toggle('on', k === current));
-    const img = slides[current].querySelector('img');
-    backdrop.style.backgroundImage = img ? `url("${img.src}")` : 'none';
-    const number = current + 1 - offset;
-    counter.textContent = number > 0 ? `${number} / ${slides.length - offset}` : '';
-    location.replace('#' + number);
+    for (var i = 0; i < slides.length; i++) {
+      if (i === current) slides[i].classList.add('on'); else slides[i].classList.remove('on');
+    }
+    var img = first(slides[current], 'img');
+    backdrop.style.backgroundImage = img ? 'url("' + img.src + '")' : 'none';
+    var number = current + 1 - offset;
+    counter.innerHTML = number > 0 ? number + ' / ' + (slides.length - offset) : '';
+    try { location.replace('#' + number); } catch (e) {}
+    layout();
   }
-  const fromHash = () => {
-    const n = parseInt(location.hash.slice(1), 10);
+  function fromHash() {
+    var n = parseInt(location.hash.slice(1), 10);
     return isNaN(n) ? 0 : n - 1 + offset;
-  };
+  }
 
-  addEventListener('keydown', e => {
+  // Touch or click: left half goes back, right half goes forward.
+  document.addEventListener('click', function (e) {
+    var W = window.innerWidth || root.clientWidth;
+    show(current + (e.clientX < W / 2 ? -1 : 1));
+  }, false);
+
+  document.addEventListener('keydown', function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const k = e.key;
-    if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(k)) show(current + 1);
-    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) show(current - 1);
-    else if (k === 'Home') show(0);
-    else if (k === 'End') show(slides.length - 1);
-    else if (k === 'f' || k === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
-    else if (k === 't' || k === 'T') document.body.classList.toggle('notext');
+    var k = e.keyCode;
+    if (k === 39 || k === 40 || k === 34 || k === 32 || k === 13) show(current + 1);       // right, down, PgDn, space, enter
+    else if (k === 37 || k === 38 || k === 33 || k === 8) show(current - 1);               // left, up, PgUp, backspace
+    else if (k === 36) show(0);                                                            // Home
+    else if (k === 35) show(slides.length - 1);                                            // End
+    else if (k === 70) {                                                                   // F
+      var request = root.requestFullscreen || root.webkitRequestFullscreen;
+      var exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (document.fullscreenElement || document.webkitFullscreenElement) { if (exit) exit.call(document); }
+      else if (request) request.call(root);
+    }
+    else if (k === 84) {                                                                   // T
+      if (has(document.body, 'notext')) document.body.classList.remove('notext');
+      else document.body.classList.add('notext');
+      layout();
+    }
     else return;
     e.preventDefault();
-  });
-  // Click or tap: left half goes back, right half goes forward.
-  addEventListener('click', e => show(current + (e.clientX < innerWidth / 2 ? -1 : 1)));
-  addEventListener('hashchange', () => { if (fromHash() !== current) show(fromHash()); });
+  }, false);
+
+  window.addEventListener('hashchange', function () { if (fromHash() !== current) show(fromHash()); }, false);
+  window.addEventListener('resize', layout, false);
+  window.addEventListener('orientationchange', layout, false);
+  var images = document.getElementsByTagName('img');
+  for (var i = 0; i < images.length; i++) images[i].addEventListener('load', layout, false);
 
   // Hide the mouse pointer when it has been still for two seconds.
-  let idle;
-  addEventListener('mousemove', () => {
+  var idle;
+  document.addEventListener('mousemove', function () {
     document.body.classList.remove('idle');
     clearTimeout(idle);
-    idle = setTimeout(() => document.body.classList.add('idle'), 2000);
-  });
+    idle = setTimeout(function () { document.body.classList.add('idle'); }, 2000);
+  }, false);
 
   show(fromHash());
+})();
 </script>
 </body>
 </html>
