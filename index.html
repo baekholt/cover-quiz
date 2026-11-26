@@ -76,7 +76,7 @@
 
 <!-- Test 1 -->
 <section class="test">
-  <p><b>Don't touch</b> Test 1 / 3</p>
+  <p>Test 1 / 3</p>
 </section>
 
 <!-- Test 2 -->
@@ -403,7 +403,7 @@
   for (var i = 0; i < images.length; i++) {
     images[i].addEventListener('load', layout, false);
     // Fetch the small backdrops up front so they appear together with the image.
-    new Image().src = images[i].getAttribute('src').replace('images/', 'images/bg/');
+    if (!has(images[i].parentNode, 'title')) new Image().src = images[i].getAttribute('src').replace('images/', 'images/bg/');
   }
 
   // Hide the mouse pointer when it has been still for two seconds.
