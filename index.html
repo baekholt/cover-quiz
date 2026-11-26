@@ -16,13 +16,10 @@
     -webkit-tap-highlight-color: transparent; }
   body.idle { cursor: none; }
 
-  /* Blurred copy of the current image behind it, only where the browser can blur. */
-  #backdrop { display: none; position: fixed; top: -10%; right: -10%; bottom: -10%; left: -10%;
+  /* A small, already blurred and darkened copy of the current image (images/bg/, same
+     file name) stretched over the screen. No CSS filter: untested on the Hi5 screen. */
+  #backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: #000 center no-repeat; background-size: cover; }
-  @supports ((filter: blur(1px)) or (-webkit-filter: blur(1px))) {
-    #backdrop { display: block; -webkit-filter: blur(2.5rem) brightness(.35) saturate(1.3);
-      filter: blur(2.5rem) brightness(.35) saturate(1.3); }
-  }
 
   section { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     overflow: hidden; }
@@ -32,17 +29,16 @@
 
   /* Optional text under the image. <b> is the big line, <small> the smallest. */
   section p { position: absolute; left: 4%; right: 4%; bottom: 4%; text-align: center;
-    font-size: 1.7rem; line-height: 1.25; color: #ccc; color: rgba(255, 255, 255, .8); }
-  section p b { display: block; font-size: 3rem; font-weight: 600; line-height: 1.1;
+    font-size: 2rem; line-height: 1.25; color: #ddd; color: rgba(255, 255, 255, .85); }
+  section p b { display: block; font-size: 3.25rem; font-weight: 600; line-height: 1.1;
     color: #fff; margin-bottom: .3rem; }
-  section p small { display: block; font-size: 1.2rem; margin-top: .5rem;
-    color: #999; color: rgba(255, 255, 255, .55); }
+  section p small { display: block; font-size: 1.5rem; margin-top: .4rem;
+    color: #aaa; color: rgba(255, 255, 255, .65); }
   body.notext section p { display: none; }
   body.notext section.title p, body.notext section.test p { display: block; }
 
   /* Test slides: nothing to reveal, arrows mark the two tap zones. */
-  section.test p { top: 38%; bottom: auto; left: 16%; right: 16%; }
-  section.test p small { margin-top: 2rem; font-size: .8rem; color: #666; }
+  section.test p { top: 40%; bottom: auto; left: 16%; right: 16%; }
   section.test:before, section.test:after { position: absolute; top: 0; bottom: 0;
     margin: auto 0; height: 15rem; line-height: 15rem; font-size: 15rem;
     color: #333; color: rgba(255, 255, 255, .15); }
@@ -70,6 +66,7 @@
   One <section> per slide, in playlist order: odd = Eläkeläiset, even = the original.
   Text is optional. Add or remove a <p> after the <img>; <b>…</b> is the big line:
       <p><b>Big line</b> Smaller line <small>Smallest line</small></p>
+  A new image also needs a backdrop with the same file name in images/bg/ (optional).
 
   Touch or click: right half of the screen = next, left half = back.
   Keys: → / space = next, ← = back, Home / End, F = fullscreen, T = hide or show text.
@@ -79,7 +76,7 @@
 
 <!-- Test 1 -->
 <section class="test">
-  <p><b>Don't touch</b> Test 1 / 3 <small class="info"></small></p>
+  <p><b>Don't touch</b> Test 1 / 3</p>
 </section>
 
 <!-- Test 2 -->
@@ -306,7 +303,6 @@
   var slides = Array.prototype.slice.call(document.getElementsByTagName('section'));
   var backdrop = document.getElementById('backdrop');
   var counter = document.getElementById('counter');
-  var info = document.querySelector('.info');
   var current = 0;
 
   function has(el, cls) { return (' ' + el.className + ' ').indexOf(' ' + cls + ' ') >= 0; }
@@ -322,7 +318,6 @@
     var W = window.innerWidth || root.clientWidth;
     var H = window.innerHeight || root.clientHeight;
     root.style.fontSize = (H / 50) + 'px';
-    if (info) info.innerHTML = W + ' x ' + H + ' @' + (window.devicePixelRatio || 1) + ' &middot; ' + navigator.userAgent;
 
     var slide = slides[current], img = first(slide, 'img'), text = first(slide, 'p');
     if (!img) return;
@@ -354,7 +349,8 @@
       if (i === current) slides[i].classList.add('on'); else slides[i].classList.remove('on');
     }
     var img = first(slides[current], 'img');
-    backdrop.style.backgroundImage = img ? 'url("' + img.src + '")' : 'none';
+    var src = img && !has(slides[current], 'title') ? img.getAttribute('src') : '';
+    backdrop.style.backgroundImage = src ? 'url("' + src.replace('images/', 'images/bg/') + '")' : 'none';
     var number = current + 1 - offset;
     counter.innerHTML = number > 0 ? number + ' / ' + (slides.length - offset) : '';
     try { location.replace('#' + number); } catch (e) {}
@@ -396,8 +392,19 @@
   window.addEventListener('hashchange', function () { if (fromHash() !== current) show(fromHash()); }, false);
   window.addEventListener('resize', layout, false);
   window.addEventListener('orientationchange', layout, false);
+  // The Hi5 screen reports a smaller viewport while loading and may not announce the change.
+  var lastW = 0, lastH = 0;
+  setInterval(function () {
+    if (window.innerWidth !== lastW || window.innerHeight !== lastH) {
+      lastW = window.innerWidth; lastH = window.innerHeight; layout();
+    }
+  }, 500);
   var images = document.getElementsByTagName('img');
-  for (var i = 0; i < images.length; i++) images[i].addEventListener('load', layout, false);
+  for (var i = 0; i < images.length; i++) {
+    images[i].addEventListener('load', layout, false);
+    // Fetch the small backdrops up front so they appear together with the image.
+    new Image().src = images[i].getAttribute('src').replace('images/', 'images/bg/');
+  }
 
   // Hide the mouse pointer when it has been still for two seconds.
   var idle;
